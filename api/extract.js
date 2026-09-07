@@ -9,6 +9,12 @@ app.use(express.json());
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Test route – GET to confirm the function is deployed
+app.get('/api/extract', (req, res) => {
+    res.json({ message: 'API is running. Use POST to extract text.' });
+});
+
+// Actual extraction – POST
 app.post('/api/extract', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
