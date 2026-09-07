@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PPT API Test</title>
+</head>
+<body>
+    <h2>Test PPT Extractor API</h2>
+    <input type="file" id="pptFile" accept=".ppt">
+    <button onclick="uploadPPT()">Upload & Extract</button>
+    <pre id="output" style="background:#f4f4f4; padding:10px; margin-top:20px; max-height:400px; overflow:auto;"></pre>
+
+    <script>
+        async function uploadPPT() {
+            const fileInput = document.getElementById('pptFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Select a .ppt file first');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            const output = document.getElementById('output');
+            output.textContent = 'Uploading...';
+
+            try {
+                const response = await fetch('https://fluffy-succotash-blond.vercel.app/api/extract', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.text) {
+                    output.textContent = data.text;
+                } else {
+                    output.textContent = 'Error: ' + JSON.stringify(data);
+                }
+            } catch (e) {
+                output.textContent = 'Request failed: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>
