@@ -4,34 +4,53 @@ const { handleUpload, getBlob } = require('@vercel/blob/client');
 const PptToText = require('ppt-to-text');
 
 const app = express();
-app.use(cors());
+
+// Explicit CORS configuration to handle preflight
+const corsOptions = {
+    origin: '*', // Allow all origins
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-vercel-token', 'x-vercel-file-name'],
+    optionsSuccessStatus: 204 // Some legacy browsers choke on 204
+};
+app.use(cors(corsOptions));
+
+// Explicitly handle OPTIONS preflight requests
+app.options('*', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-vercel-token, x-vercel-file-name');
+    res.sendStatus(204);
+});
+
+// Handle body parsing
 app.use(express.json());
 
-// Endpoint that handles token generation and webhook callbacks
+// Token endpoint for client-direct Blob upload
 app.post('/api/upload/token', async (req, res) => {
     try {
         const body = req.body;
+        console.log('Received token request:', body);
+        
         const token = await handleUpload({
             body,
             request: req,
             onBeforeGenerateToken: () => {
-                // Optional: you can add authentication here
-                // For now, allow all
+                // Optional: add auth check here
             },
             onUploadCompleted: async ({ blob }) => {
-                // This is called when the upload is complete
-                // We process the file here
+                console.log('Upload completed:', blob.url);
                 try {
                     const blobData = await getBlob(blob.url);
                     const buffer = Buffer.from(await blobData.arrayBuffer());
+                    console.log('File size:', buffer.length);
+                    
                     const converter = new PptToText(buffer);
                     converter.extract((err, text) => {
                         if (err) {
                             console.error('Extraction error:', err);
                         } else {
-                            // Here we could store the text or send it back to the client
-                            // For now, just log it
                             console.log('Extracted text length:', text.length);
+                            // Here you could store the text in DB or send it back
                         }
                     });
                 } catch (error) {
@@ -41,13 +60,19 @@ app.post('/api/upload/token', async (req, res) => {
         });
         res.json(token);
     } catch (error) {
+        console.error('Token endpoint error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// Simple test route (optional)
+// Simple test route
 app.get('/api/extract', (req, res) => {
     res.json({ message: 'API is running. Use POST /api/upload/token' });
+});
+
+// Catch-all for undefined routes
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not found' });
 });
 
 module.exports = app;
