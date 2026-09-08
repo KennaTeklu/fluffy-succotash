@@ -6,10 +6,15 @@
       "use": "@vercel/node"
     }
   ],
-  "routes": [
+  "headers": [
     {
-      "src": "/api/extract",
-      "dest": "/api/extract.js"
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, x-vercel-token, x-vercel-file-name" },
+        { "key": "Access-Control-Max-Age", "value": "86400" }
+      ]
     }
   ]
 }
